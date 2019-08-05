@@ -1,1 +1,1 @@
-from .pfcon   import StoreHandler, ThreadedHTTPServer
+from .pfstorage   import PfStorage, StoreHandler, ThreadedHTTPServer
