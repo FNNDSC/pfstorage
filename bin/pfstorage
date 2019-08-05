@@ -10,59 +10,47 @@
 import sys, os
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), '..'))
 
-import  pfcon
+import  pfstorage
 import  socket
 from    argparse            import RawTextHelpFormatter
 from    argparse            import ArgumentParser
-#from    distutils.sysconfig import get_python_lib
 
 import  pudb
-
-# The following convolutions are necessary to accommodate both
-# development and deployed instances of the 'pfcon.py' module
-# and related dependencies.
-# sys.path.insert(1, os.path.join(os.path.dirname(__file__), '../pfcon'))
-# try:
-#     import  pfcon
-# except:
-#     sys.path.insert(1, os.path.join(get_python_lib(True, True), 'site-packages'))
-#     sys.path.insert(1, os.path.join(get_python_lib(True, True), 'site-packages/pfcon'))
-#     import  pfcon
 
 from    pfmisc._colors             import Colors
 
 str_defIP = [l for l in ([ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] if not ip.startswith("127.")][:1], [[(s.connect(('8.8.8.8', 53)), s.getsockname()[0], s.close()) for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]]) if l][0][0]
-str_version = "2.2.0.2"
+str_version = "0.0.0.99"
 str_desc = Colors.CYAN + """
 
-        __                
-       / _|               
- _ __ | |_ ___ ___  _ __  
-| '_ \|  _/ __/ _ \| '_ \\ 
-| |_) | || (_| (_) | | | |
-| .__/|_| \___\___/|_| |_|
-| |                       
-|_|                       
+         __       _                                    
+        / _|     | |                                   
+ _ __  | |_  ___ | |_   ___   _ __   __ _   __ _   ___ 
+| '_ \ |  _|/ __|| __| / _ \ | '__| / _` | / _` | / _ \\
+| |_) || |  \__ \| |_ | (_) || |   | (_| || (_| ||  __/
+| .__/ |_|  |___/ \__| \___/ |_|    \__,_| \__, | \___|
+| |                                         __/ |      
+|_|                                        |___/       
 
 
-                            Process-File-CONtroller
+                            Path-File-storage
 
-           A controller for processes and data -- part of the pf* family.
+           An interface to open storage -- part of the pf* family.
 
                               -- version """ + \
              Colors.YELLOW + str_version + Colors.CYAN + """ --
 
-    'pfcon' is a module class and stand-alone app that provides a simple API (both
-    programmatically and CLI-driven) to coordinate data transfers and process control
-    to remote pfioh (for data transfer) and pman (for process management).
+    'pfstorage' is a module class and stand-alone app that provides a simple 
+    API (both programmatically and CLI-driven) to access some openstorage 
+    backend (such as swift).
     
 """ + \
         Colors.BLINK_RED +  """
         
-            +-----------------------------------------------------------+
-            | NOTE THAT THIS SERVER DOES NOT CURRENTLY AUTHENTICATE AND |
-            | WILL HONOR *ALL* DATA PUSH AND PROCESS CONTROL REQUESTS!  |
-            +-----------------------------------------------------------+
+              +---------------------------------------------------------+
+              | Use '--enableTokenAuth' and '--tokenPath <tokenPath>'   |
+              |         arguments for secure communication.             |    
+              +---------------------------------------------------------+
               
 """ + Colors.NO_COLOUR
 
@@ -71,18 +59,15 @@ def synopsis(ab_shortOnly = False):
     shortSynopsis =  '''
     NAME
 
-	    pfcon 
+	    pfstorage
 
-        - process-and-file controller
+        - path-and-file storage
 
     SYNOPSIS
 
-            pfcon                                                   \\
-                [--ip <IPofServer>]                                 \\
-                [--port <port>]                                     \\
-                [--man <manpage>]                                   \\
-                [--forever]                                         \\
-                [--coordBlockSeconds <secondsBlock>]                \\
+            pfstorage                                               \\
+                [--ip <storageServerIP>]                            \\
+                [--port <storageServerPort>]                        \\
                 [--verbosity <level>]                               \\
                 [--configFileLoad <file>]                           \\
                 [--configFileSave <file>]                           \\
@@ -92,57 +77,54 @@ def synopsis(ab_shortOnly = False):
                 [-y|--synopsis]                                     \\
                 [--version]                                         \\
                 [--debugToDir <dir>]                                \\
-                [--verbosity <level>]
+                [--verbosity <level>]                               \\
+                --action <action>                                   \\
+                --actionArgs <actionArgs>
 
     BRIEF EXAMPLE
 
-            pfcon                                                   \\
-                --forever                                           \\
+            pfstorage                                               \\
+                --ip %s                                   \\
                 --port 5005                                         \\
                 --httpResponse                                      \\
                 --verbosity 1                                       \\
                 --debugToDir /tmp                                   \\
-                --ip %s
+                --action ls                                         \\
+                --actionArgs dirs
 
     ''' % str_defIP
 
     description =  '''
     DESCRIPTION
 
-        ``pfcon`` is a process/file controller, part of the ``pf`` suite of 
-        applications, and used mostly in the context of ChRIS.
+        ``pfstorage`` is a module/script that provides unifed access
+        to some openstorage backend (typically swift) and it is part 
+        of the ``pf`` suite of applications.
 
-        Typically ``pfcon`` is launched on the localhost where it 
-        listens for directives directing data and compute. Target 
-        data is zipped and transmitted to a remote location, and 
-        once available on the remote, a containerized computation 
-        is started.
-
-        An internal loop monitors the status of the remote processing,
-        and once complete, control returns.
+        Typically ``pfstorage`` is controlled by the pattern of actions
+        and actionArgs passed in the CLI.
 
     ARGS
 
+        --action <action>
+        The action to perform. This can be one of:
+
+            * pull -- pull data from storage to file system
+            * push -- push data from file system to storage
+            * ls   -- listing of data within storage
+
+        --actionArgs <args>
+        The action-specific pattern of arguments.
+
         [--ip <IP>]                            
 
-        The IP interface on which to listen. Default %s.
+        The IP interface of the openstorage service. Default %s.
 
         [--port <port>]
-        The port on which to listen. Defaults to '5055'.
-
-        [--man <manpage>]
-        Internal man page with more detail on specific calls.
-
-        [--forever]
-        Start service and do not terminate.
+        The port of the openstorage service. Defaults to '5055'.
 
         [--httpResponse]
         Send return strings as HTTP formatted replies with content-type html.
-
-        [--cordBlockSeconds <blockSeconds>]
-        The number of seconds to block/wait internally in the coordination loop.
-        This is the time between ``pfioh`` has indicated successful unpack of file
-        data and the call to ``pman`` to start processing.
 
         [--configFileLoad <file>]
         Load configuration information from the JSON formatted <file>.
@@ -173,15 +155,14 @@ def synopsis(ab_shortOnly = False):
 
     EXAMPLES
 
-    Start ``pfcon`` in forever mode:
-
-            pfcon                                                   \\
-                --forever                                           \\
-                --port 5005                                         \\
-                --httpResponse                                      \\
-                --verbosity 1                                       \\
-                --debugToDir /tmp                                   \\
-                --ip %s
+        pfstorage                                               \\
+            --ip %s                                   \\
+            --port 5005                                         \\
+            --httpResponse                                      \\
+            --verbosity 1                                       \\
+            --debugToDir /tmp                                   \\
+            --action ls                                         \\
+            --actionArgs dirs
 
     ''' % (str_defIP, str_defIP)
     if ab_shortOnly:
@@ -213,20 +194,6 @@ parser.add_argument(
     default = False
 )
 parser.add_argument(
-    '--man',
-    help    = 'request help',
-    dest    = 'man',
-    action  = 'store',
-    default = ''
-)
-parser.add_argument(
-    '--forever',
-    help    = 'if specified, serve forever, otherwise terminate after single service.',
-    dest    = 'b_forever',
-    action  = 'store_true',
-    default = False
-)
-parser.add_argument(
     '--test',
     help    = 'if specified, perform internal tests',
     dest    = 'b_test',
@@ -239,13 +206,6 @@ parser.add_argument(
     dest    = 'b_httpResponse',
     action  = 'store_true',
     default = False
-)
-parser.add_argument(
-    '--coordBlockSeconds',
-    help    = 'the number of seconds to block internally in the coordination loop',
-    dest    = 'coordBlockSeconds',
-    action  = 'store',
-    default = 5
 )
 parser.add_argument(
     '--configFileLoad',
@@ -304,24 +264,29 @@ if args.b_version:
     print("Version: %s" % str_version)
     sys.exit(1)
 
+storage         = pfstorage.PfStorage(
+    args        = vars(args)
+)
+
+
 # pudb.set_trace()
-server          = pfcon.ThreadedHTTPServer((args.ip, args.port), pfcon.StoreHandler)
-server.setup(args = vars(args), desc = str_desc, ver = str_version)
+# server          = pfstorage.ThreadedHTTPServer((args.ip, args.port), pfstorage.StoreHandler)
+# server.setup(args = vars(args), desc = str_desc, ver = str_version)
 
-if args.b_test:
-    handler     = pfcon.StoreHandler(test = True)
-    handler.do_POST(
-        d_msg = {
-            "action": "hello",
-            "meta": {
-                "askAbout":     "sysinfo",
-                "echoBack":     "Hi there!"
-                }
-            }
-    )
-    sys.exit(0)
+# if args.b_test:
+#     handler     = pfstorage.StoreHandler(test = True)
+#     handler.do_POST(
+#         d_msg = {
+#             "action": "hello",
+#             "meta": {
+#                 "askAbout":     "sysinfo",
+#                 "echoBack":     "Hi there!"
+#                 }
+#             }
+#     )
+#     sys.exit(0)
 
-if args.b_forever and not args.b_test:
-    server.serve_forever()
-else:
-    server.handle_request()
+# if args.b_forever and not args.b_test:
+#     server.serve_forever()
+# else:
+#     server.handle_request()
