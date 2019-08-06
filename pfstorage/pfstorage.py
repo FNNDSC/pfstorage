@@ -1,7 +1,8 @@
 #!/usr/bin/env python3.5
 
-import  sys
+import  abc
 
+import  sys
 from    io              import  BytesIO as IO
 from    http.server     import  BaseHTTPRequestHandler, HTTPServer
 from    socketserver    import  ThreadingMixIn
@@ -32,7 +33,7 @@ import  pfmisc
 # debugging utilities
 import  pudb
 
-# pfcon local dependencies
+# pfstorage local dependencies
 from    pfmisc._colors      import  Colors
 from    pfmisc.debug        import  debug
 from    pfmisc.C_snode      import *
@@ -136,181 +137,186 @@ Gd_internalvar  = {
 
 Gd_tree         = C_stree()
 
+def static_vars(**kwargs):
+    def decorate(func):
+        for k in kwargs:
+            setattr(func, k, kwargs[k])
+        return func
+    return decorate
 
-class PfStorage():
+class PfStorage(metaclass = abc.ABCMeta):
+
+    def state_init(self, d_args, str_desc, str_version):
+        """
+        Populate the internal <self.state> dictionary based on the 
+        passed 'args'
+        """
+
+        if len(d_args['str_configFileLoad']):
+            if Path(d_args['str_configFileLoad']).is_file():
+                # Read configuration detail from JSON formatted file
+                with open(d_args['str_configFileLoad']) as json_file:
+                    self.d_state  = json.load(json_file)
+        else:
+            self.d_state =  {
+                'this': {
+                    'name':                 'pfstorage',
+                    'version':              str_version,
+                    'desc':                 str_desc,
+                    'verbosity':            int(d_args['verbosity']),
+                    'debugToDir':           d_args['str_debugToDir'],
+                    'configFileLoad':       d_args['str_configFileLoad'],
+                    'configFileSave':       d_args['str_configFileSave'],
+                    'args':                 d_args
+                },
+                "swift": {
+                    "auth_url":                 "http://swift_service:8080/auth/v1.0",
+                    "username":                 "chris:chris1234",
+                    "key":                      "testing",
+                    "container_name":           "users",
+                    "auto_create_container":    True,
+                    "file_storage":             "swift.storage.SwiftStorage"
+                }
+            }
+
+        pudb.set_trace()
+        self.n_state.initFromDict(self.d_state)
+        if len(self.n_state.cat('/this/debugToDir')):
+            if not os.path.exists(self.n_state.cat('/this/debugToDir')):
+                os.makedirs(self.n_state.cat('/this/debugToDir'))
 
     def __init__(self, *args, **kwargs):
         """
+        The logic of this constructor reflects a bit from legacy design 
+        patterns of `pfcon` -- specifically the passing of flags in a 
+        single structure, and the <self.state> dictionary to try and
+        organize the space of <self> variables a bit logically.
+
         """
 
-        global Gd_internalvar
-        global G_b_httpResponse
-        global Gd_tree
-
-        self.state              =  {
-            'self': {
-                'name':                 'pfcon',
-                'version':              'undefined',
-                'verbosity':            1,
-                'coordBlockSeconds':    10,
-                'debugToDir':           ''
-            },
-            "swift": {
-                "auth_url":                 "http://swift_service:8080/auth/v1.0",
-                "username":                 "chris:chris1234",
-                "key":                      "testing",
-                "container_name":           "users",
-                "auto_create_container":    True,
-                "file_storage":             "swift.storage.SwiftStorage"
-            },
-            'service':  {
-                'host': {
-                    'data': {
-                        'addr':             '%PFIOH_IP:5055',
-                        'baseURLpath':      'api/v1/cmd/',
-                        'status':           'undefined',
-                        'authToken':        'password'
-                    },
-                    'compute': {
-                        'addr':             '%PMAN_IP:5010',
-                        'baseURLpath':      'api/v1/cmd/',
-                        'status':           'undefined',
-                        'authToken':        'password'
-                    }
-                },
-                'localhost': {
-                    'data': {
-                        'addr':             '127.0.0.1:5055',
-                        'baseURLpath':      'api/v1/cmd/',
-                        'status':           'undefined'
-                    },
-                    'compute': {
-                        'addr':         '127.0.0.1:5010',
-                        'baseURLpath':  'api/v1/cmd/',
-                        'status':       'undefined'
-                    }
-                }
-            }
-        }
-
+        self.n_state            = C_stree()
         b_test                  = False
-        self.__name__           = 'Pfstorage'
-        self.b_useDebug         = False
-        self.str_debugToDir     = self.state['self']['debugToDir']
-        self.b_quiet            = True
+        d_args                  = {}
+        str_desc                = ''
+        str_version             = ''
 
-        self.verbosity          = self.state['self']['verbosity']
+        pudb.set_trace()
+
+        for k,v in kwargs.items():
+            if k == 'test':     b_test          = True
+            if k == 'args':     d_args          = v
+            if k == 'desc':     str_desc        = v
+            if k == 'version':  str_version     = v
+
+        self.state_init(d_args, str_desc, str_version)
+
         self.dp                 = pfmisc.debug(    
-                                            verbosity   = self.verbosity,
-                                            within      = self.__name__
+                                            verbosity   = self.n_state.cat('/this/verbosity'),
+                                            within      = self.n_state.cat('/this/name')
                                             )
         self.pp                 = pprint.PrettyPrinter(indent=4)
-        for k,v in kwargs.items():
-            if k == 'test': b_test  = True
 
-        if not b_test:
-            BaseHTTPRequestHandler.__init__(self, *args, **kwargs)
-
-        str_defIP       = [l for l in ([ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] if not ip.startswith("127.")][:1], [[(s.connect(('8.8.8.8', 53)), s.getsockname()[0], s.close()) for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]]) if l][0][0]
-        str_defIPpman   = str_defIP
-        str_defIPpfioh  = str_defIP
-
-        if 'HOST_IP' in os.environ:
-            str_defIP       = os.environ['HOST_IP']
-            str_defIPpman   = os.environ['HOST_IP']
-            str_defIPpfioh  = os.environ['HOST_IP']
-
-        # For old docker-compose
-        if 'PMAN_PORT_5010_TCP_ADDR' in os.environ:
-            str_defIPpman   = os.environ['PMAN_PORT_5010_TCP_ADDR']
-        if 'PFIOH_PORT_5055_TCP_ADDR' in os.environ:
-            str_defIPpfioh  = os.environ['PFIOH_PORT_5055_TCP_ADDR']
-
-        # For newer docker-compose
-        try:
-            pman_service    = socket.gethostbyname('pman_service')
-            if pman_service != "127.0.0.1":
-                str_defIPpman   = pman_service
-        except:
-            pass
-        try:
-            pfioh_service   = socket.gethostbyname('pfioh_service')
-            if pfioh_service != "127.0.0.1":
-                str_defIPpfioh  = pfioh_service
-        except:
-            pass
-
-        for k,v in kwargs.items():
-            if k == 'args': self.args           = v
-            if k == 'desc': self.str_desc       = v
-            if k == 'ver':  self.str_version    = v
-
-        if len(self.args['str_configFileLoad']):
-            if Path(self.args['str_configFileLoad']).is_file():
-                # Read configuration detail from JSON formatted file
-                with open(self.args['str_configFileLoad']) as json_file:
-                    Gd_internalvar  = json.load(json_file)
-
-        G_b_httpResponse = self.args['b_httpResponse']
-
-        Gd_internalvar['self']['name']                  = self.str_name
-        Gd_internalvar['self']['version']               = self.str_version
-        Gd_internalvar['self']['coordBlockSeconds']     = int(self.args['coordBlockSeconds'])
-        Gd_internalvar['self']['verbosity']             = int(self.args['verbosity'])
-        if len(self.args['str_debugToDir']):
-            Gd_internalvar['self']['debugToDir']        = self.args['str_debugToDir']
-            self.str_debugToDir                         = self.args['str_debugToDir']
-
-        self.verbosity      = Gd_internalvar['self']['verbosity']
-        self.dp             = debug(verbosity = self.verbosity)
-
-        self.dp.qprint(self.str_desc, level = 1)
-
-        Gd_tree.initFromDict(Gd_internalvar)
-
-        self.leaf_process(  where   = '/service/host/data/addr', 
-                            replace = '%PFIOH_IP', 
-                            newVal  = str_defIPpfioh)
-        self.leaf_process(  where   = '/service/host/compute/addr', 
-                            replace = '%PMAN_IP', 
-                            newVal  = str_defIPpman)
-
+        self.dp.qprint(d_args['desc'], level = 1)
         self.dp.qprint(
             Colors.YELLOW + "\n\t\tInternal data tree:", 
             level   = 1,
             syslog  = False)
         self.dp.qprint(
-            C_snode.str_blockIndent(str(Gd_tree), 3, 8), 
+            C_snode.str_blockIndent(str(self.n_state), 3, 8), 
             level   = 1,
             syslog  = False)
 
-        self.col2_print("Listening on address:",    self.args['ip'])
-        self.col2_print("Listening on port:",       self.args['port'])
-        self.col2_print("Server listen forever:",   self.args['b_forever'])
-        self.col2_print("Return HTTP responses:",   G_b_httpResponse)
-        self.col2_print("Internal debug dir:",      self.str_debugToDir)
+    def filesFind(self, *args, **kwargs):
+        """
+        This method simply returns a list of files 
+        and directories down a filesystem tree starting 
+        from the kwarg:
 
-        # pudb.set_trace()
-        if len(self.str_debugToDir):
-            if not os.path.exists(self.str_debugToDir):
-                os.makedirs(self.str_debugToDir)
+            root = <someStartPath>
 
-        self.dp.qprint(
-            Colors.LIGHT_GREEN + 
-            "\n\n\t\t\tWaiting for incoming data...\n" + 
-            Colors.NO_COLOUR,
-            level   = 1,
-            syslog  = False)
+        """
+        d_ret      = {
+            'status':   False,
+            'l_fileFS': [],
+            'l_dirFS':  [],
+            'numFiles': 0,
+            'numDirs':  0
+        }
+        str_rootPath    = ''
+        for k,v in kwargs.items():
+            if k == 'root': str_rootPath    = v
+        if len(str_rootPath):
+            # Create a list of all files down the <str_rootPath>
+            for root, dirs, files in os.walk(str_rootPath):
+                for filename in files:
+                    d_ret['l_fileFS'].append(os.path.join(root, filename))
+                    d_ret['status'] = True
+                for dirname in dirs:
+                    d_ret['l_dirFS'].append(os.path.join(root, dirname))
+        
+        d_ret['numFiles']   = len(d_ret['l_fileFS'])
+        d_ret['numDirs']    = len(d_ret['l_dirFS'])
+        return d_ret
 
-    def static_vars(**kwargs):
-        def decorate(func):
-            for k in kwargs:
-                setattr(func, k, kwargs[k])
-            return func
-        return decorate
+    def run(self, str_action, str_args):
+        """
+        Execute the actual action.
+        """
+        self.connect()
+
+    @abc.abstractmethod
+    def connect(self, *args, **kwargs):
+        """
+        The base connection class. 
+        
+        This handles the connection to the openstorage providing service.
+        """
+
+    @abc.abstractmethod
+    def ls(self, *args, **kwargs):
+        """
+        Base listing class.
+        
+        Provide a listing of resources in the openstorage providing
+        service.
+        """
+
+    @abc.abstractmethod
+    def objExists(self, *args, **kwargs):
+        """
+        Base object existance class.
+
+        Check if an object exists in the openstorage providing service.
+        """
+
+    @abc.abstractmethod
+    def objPut(self, *args, **kwargs):
+        """
+        Base object put method.
+
+        Put a list of (file) objects into storage.
+        """
+
+    @abc.abstractmethod
+    def objPull(self, *args, **kwargs):
+        """
+        Base object pull method.
+
+        Pull a list of (file) objects from storage.
+        """        
+
+class swiftStorage(PfStorage):
+
+    def __init__(self, *args, **kwargs):
+        """
+        Core initialization and logic in the base class
+        """
+
+        pudb.set_trace()
+        PfStorage.__init__(self, *args, **kwargs)
 
     @static_vars(str_prependBucketPath = "")
-    def swiftstorage_connect(self, *args, **kwargs):
+    def connect(self, *args, **kwargs):
         """
         Connect to swift storage and return the connection object,
         as well an optional "prepend" string to fully qualify 
@@ -326,12 +332,12 @@ class PfStorage():
         b_status                = True
 
         for k,v in kwargs.items():
-            if k == 'prependBucketPath':    self.swiftstorage_connect.str_prependBucketPath = v
+            if k == 'prependBucketPath':    self.connect.str_prependBucketPath = v
 
         d_ret       = {
             'status':               b_status,
             'conn':                 None,
-            'prependBucketPath':    self.swiftstorage_connect.str_prependBucketPath,
+            'prependBucketPath':    self.connect.str_prependBucketPath,
             'user':                 Gd_tree.cat('/swift/username'),
             'key':                  Gd_tree.cat('/swift/key'),
             'authurl':              Gd_tree.cat('/swift/auth_url'),
@@ -351,7 +357,7 @@ class PfStorage():
 
         return d_ret
 
-    def swiftstorage_ls(self, *args, **kwargs):
+    def ls(self, *args, **kwargs):
         """
         Return a list of objects in the swiftstorage
         """
@@ -371,7 +377,7 @@ class PfStorage():
         # This is probably not very robust!
         while str_path[:1] == '.':  str_path    = str_path[1:]
 
-        d_conn          = self.swiftstorage_connect(**kwargs)
+        d_conn          = self.connect(**kwargs)
         if d_conn['status']:
             conn        = d_conn['conn']
             if b_prependBucketPath:
@@ -396,7 +402,7 @@ class PfStorage():
             'fullPath':     str_fullPath
         }
 
-    def swiftstorage_objExists(self, *args, **kwargs):
+    def objExists(self, *args, **kwargs):
         """
         Return True/False if passed object exists in swift storage
         """        
@@ -408,7 +414,7 @@ class PfStorage():
             if k == 'prependBucketPath':    b_prependBucketPath = v
 
         kwargs['path']  = str_obj
-        d_swift_ls  = self.swiftstorage_ls(*args, **kwargs)
+        d_swift_ls  = self.ls(*args, **kwargs)
         str_obj     = d_swift_ls['fullPath']
 
         if d_swift_ls['status']:
@@ -421,7 +427,7 @@ class PfStorage():
             'objPath':  str_obj
         }
 
-    def swiftstorage_objPut(self, *args, **kwargs):
+    def objPut(self, *args, **kwargs):
         """
         Put an object (or list of objects) into swift storage.
 
@@ -466,7 +472,7 @@ class PfStorage():
             'localpath':        ''
         }
 
-        d_conn  = self.swiftstorage_connect(*args, **kwargs)
+        d_conn  = self.connect(*args, **kwargs)
         if d_conn['status']:
             str_prependBucketPath       = d_conn['prependBucketPath']
 
@@ -505,7 +511,7 @@ class PfStorage():
                 d_ret['objectFileList'].append(str_storagefilename)
         return d_ret
 
-    def swiftstorage_objPull(self, *args, **kwargs):
+    def objPull(self, *args, **kwargs):
         """
         Pull an object (or set of objects) from swift storage and
         onto the local filesystem.
@@ -545,7 +551,7 @@ class PfStorage():
             'localpath':        ''
         }
 
-        d_conn  = self.swiftstorage_connect(*args, **kwargs)
+        d_conn  = self.connect(*args, **kwargs)
         if d_conn['status']:
             str_prependBucketPath       = d_conn['prependBucketPath']
 
@@ -631,34 +637,6 @@ class PfStorage():
         
         return d_ret
 
-    def filesFind(self, *args, **kwargs):
-        """
-        This method simply returns a list of files 
-        down a filesystem tree starting from the 
-        kwarg:
-
-            root = <someStartPath>
-
-        """
-
-        d_ret      = {
-            'status':   False,
-            'l_fileFS': [],
-            'numFiles': 0
-        }
-        str_rootPath    = ''
-        for k,v in kwargs.items():
-            if k == 'root': str_rootPath    = v
-        if len(str_rootPath):
-            # Create a list of all files down the <str_rootPath>
-            for root, dirs, files in os.walk(str_rootPath):
-                for filename in files:
-                    d_ret['l_fileFS'].append(os.path.join(root, filename))
-                    d_ret['status'] = True
-        
-        d_ret['numFiles']   = len(d_ret['l_fileFS'])
-        return d_ret
-
     def swiftStorage_createFileList(self, *args, **kwargs):
         """
         Initial entry point for swift storage processing.
@@ -690,6 +668,192 @@ class PfStorage():
             'd_create': d_create,
             'd_put':    d_swiftPut
         }
+
+    def swiftstorage_connect(self, *args, **kwargs):
+        """
+        Connect to swift storage and return the connection object,
+        as well an optional "prepend" string to fully qualify 
+        object location in swift storage.
+        """
+
+        b_status                = True
+        b_prependBucketPath     = False
+
+        for k,v in kwargs.items():
+            if k == 'prependBucketPath':    b_prependBucketPath = v
+
+        d_ret       = {
+            'status':               b_status,
+            'conn':                 None,
+            'prependBucketPath':    ""
+        }
+
+        # initiate a swift service connection, based on internal
+        # settings already available in the django variable space.
+        try:
+            d_ret['conn'] = swiftclient.Connection(
+                user    = settings.SWIFT_USERNAME,
+                key     = settings.SWIFT_KEY,
+                authurl = settings.SWIFT_AUTH_URL,
+            )
+        except:
+            d_ret['status'] = False
+
+        if b_prependBucketPath:
+            d_ret['prependBucketPath']  = self.c_pluginInst.owner.username + '/uploads'
+
+        return d_ret
+
+    def swiftstorage_ls(self, *args, **kwargs):
+        """
+        Return a list of objects in the swiftstorage
+        """
+        l_ls                    = []    # The listing of names to return
+        ld_obj                  = {}    # List of dictionary objects in swift
+        str_path                = '/'
+        str_fullPath            = ''
+        b_prependBucketPath     = False
+        b_status                = False
+
+        for k,v in kwargs.items():
+            if k == 'path':                 str_path            = v
+            if k == 'prependBucketPath':    b_prependBucketPath = v
+
+        # Remove any leading noise on the str_path, specifically
+        # any leading '.' characters.
+        # This is probably not very robust!
+        while str_path[:1] == '.':  str_path    = str_path[1:]
+
+        d_conn          = self.swiftstorage_connect(**kwargs)
+        if d_conn['status']:
+            conn        = d_conn['conn']
+            if b_prependBucketPath:
+                str_fullPath    = '%s%s' % (d_conn['prependBucketPath'], str_path)
+            else:
+                str_fullPath    = str_path
+
+            # get the full list of objects in Swift storage with given prefix
+            ld_obj = conn.get_container( settings.SWIFT_CONTAINER_NAME, 
+                                        prefix          = str_fullPath,
+                                        full_listing    = True)[1]        
+
+            for d_obj in ld_obj:
+                l_ls.append(d_obj['name'])
+                b_status    = True
+        
+        return {
+            'status':       b_status,
+            'objectDict':   ld_obj,
+            'lsList':       l_ls,
+            'fullPath':     str_fullPath
+        }
+
+    def swiftstorage_objExists(self, *args, **kwargs):
+        """
+        Return True/False if passed object exists in swift storage
+        """        
+        b_exists    = False
+        str_obj     = ''
+
+        for k,v in kwargs.items():
+            if k == 'obj':                  str_obj             = v
+            if k == 'prependBucketPath':    b_prependBucketPath = v
+
+        kwargs['path']  = str_obj
+        d_swift_ls  = self.swiftstorage_ls(*args, **kwargs)
+        str_obj     = d_swift_ls['fullPath']
+
+        if d_swift_ls['status']:
+            for obj in d_swift_ls['lsList']:
+                if str_obj in obj:
+                    b_exists = True
+
+        return {
+            'status':   b_exists,
+            'objPath':  str_obj
+        }
+
+    def swiftstorage_objPut(self, *args, **kwargs):
+        """
+        Put an object (or list of objects) into swift storage.
+
+        By default, to location in storage will map 1:1 to the
+        location name string in the local filesytem. This storage
+        location can be remapped by using the '<toLocation>' and
+        '<mapLocationOver>' kwargs. For example, assume
+        a list of local locations starting with:
+
+                /home/user/project/data/ ...
+
+        and we want to pack everything in the 'data' dir to 
+        object storage, at location '/storage'. In this case, the
+        pattern of kwargs specifying this would be:
+
+                    fileList = ['/home/user/project/data/file1',
+                                '/home/user/project/data/dir1/file_d1',
+                                '/home/user/project/data/dir2/file_d2'],
+                    toLocation      = '/storage',
+                    mapLocationOver = '/home/user/project/data'
+
+        will replace, for each file in <fileList>, the <mapLocationOver> with
+        <toLocation>, resulting in a new list
+
+                    '/storage/file1', 
+                    '/storage/dir1/file_d1',
+                    '/storage/dir2/file_d2'
+
+        Note that the <toLocation> is subject to <b_prependBucketPath>!
+
+        """
+        b_status                = True
+        l_localfile             = []    # Name on the local file system
+        l_objectfile            = []    # Name in the object storage
+        str_swiftLocation       = ''
+        str_mapLocationOver     = ''
+        str_localfilename       = ''
+        str_storagefilename     = ''
+        str_prependBucketPath   = ''
+        d_ret                   = {
+            'status':           b_status,
+            'localFileList':    [],
+            'objectFileList':   []
+        }
+
+        d_conn  = self.swiftstorage_connect(*args, **kwargs)
+        if d_conn['status']:
+            str_prependBucketPath       = d_conn['prependBucketPath']
+
+        str_swiftLocation               = str_prependBucketPath
+
+        for k,v in kwargs.items():
+            if k == 'file':             l_localfile.append(v)
+            if k == 'fileList':         l_localfile         = v
+            if k == 'toLocation':       str_swiftLocation   = '%s%s' % (str_prependBucketPath, v)
+            if k == 'mapLocationOver':  str_mapLocationOver = v
+
+        if len(str_mapLocationOver):
+            # replace the local file path with object store path
+            l_objectfile    = [w.replace(str_mapLocationOver, str_swiftLocation) \
+                                for w in l_localfile]
+        else:
+            # Prepend the swiftlocation to each element in the localfile list:
+            l_objectfile    = [str_swiftLocation + '{0}'.format(i) for i in l_localfile]
+
+        if d_conn['status']:
+            for str_localfilename, str_storagefilename in zip(l_localfile, l_objectfile): 
+                try:
+                    d_ret['status'] = True and d_ret['status']
+                    with open(str_localfilename, 'r') as fp:
+                        d_conn['conn'].put_object(
+                            settings.SWIFT_CONTAINER_NAME,
+                            str_storagefilename,
+                            contents=fp.read()
+                        )
+                except:
+                    d_ret['status'] = False
+                d_ret['localFileList'].append(str_localfilename)
+                d_ret['objectFileList'].append(str_storagefilename)
+        return d_ret
 
 
 class StoreHandler(BaseHTTPRequestHandler):
