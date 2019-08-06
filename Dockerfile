@@ -29,8 +29,8 @@ MAINTAINER fnndsc "dev@babymri.org"
 ARG UID=1001
 ENV UID=$UID
 
-ARG APPROOT="/usr/src/pfcon"  
-COPY . /tmp/pfcon
+ARG APPROOT="/usr/src/pfstorage"  
+COPY . /tmp/pfstorage
 COPY ./docker-entrypoint.py /dock/docker-entrypoint.py
 
 RUN apt-get update \
@@ -41,8 +41,8 @@ RUN apt-get update \
   && adduser localuser sudo                                           \
   && apt-get install -y libssl-dev libcurl4-openssl-dev bsdmainutils vim net-tools inetutils-ping \
   && pip install --upgrade pip                                        \
-  && pip3 install /tmp/pfcon                                          \
-  && rm -fr /tmp/pfcon                                                \
+  && pip3 install /tmp/pfstorage                                      \
+  && rm -fr /tmp/pfstorage                                            \
   && chmod 777 /dock                                                  \
   && chmod 777 /dock/docker-entrypoint.py                             \
   && echo "localuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
