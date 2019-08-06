@@ -14,18 +14,18 @@ def readme():
         return f.read()
 
 setup(
-      name             =   'pfcon',
-      version          =   '2.2.0.2',
-      description      =   '(Python) Process and File Controller',
+      name             =   'pfstorage',
+      version          =   '0.0.0.99',
+      description      =   'openstorage interface',
       long_description =   readme(),
       author           =   'Rudolph Pienaar',
       author_email     =   'rudolph.pienaar@gmail.com',
-      url              =   'https://github.com/FNNDSC/pfcon',
-      packages         =   ['pfcon'],
+      url              =   'https://github.com/FNNDSC/pfstorage',
+      packages         =   ['pfstorage'],
       install_requires =   ['pycurl', 'pyzmq', 'webob', 'pudb', 'psutil', 'pfurl', 'pfmisc', 'python-swiftclient'],
       test_suite       =   'nose.collector',
       tests_require    =   ['nose'],
-      scripts          =   ['bin/pfcon'],
+      scripts          =   ['bin/pfstorage'],
       license          =   'MIT',
       zip_safe         =   False
      )
