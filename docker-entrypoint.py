@@ -25,14 +25,12 @@ str_desc = """
 
 """
 
-def pfcon_do(args, unknown):
+def pfstorage_do(args, unknown):
 
     str_otherArgs   = ' '.join(unknown)
 
-    # str_CMD = "/usr/local/pfcon/bin/pfcon %s" % (str_otherArgs)
-    str_CMD = "/usr/local/bin/pfcon %s" % (str_otherArgs)
+    str_CMD = "/usr/local/bin/pfstorage %s" % (str_otherArgs)
     return str_CMD
-
 
 parser  = argparse.ArgumentParser(description = str_desc)
 
@@ -64,7 +62,7 @@ args, unknown   = parser.parse_known_args()
 
 if __name__ == '__main__':
     try:
-        fname   = 'pfcon_do(args, unknown)'
+        fname   = 'pfstorage_do(args, unknown)'
         str_cmd = eval(fname)
         os.system(str_cmd)
     except:
