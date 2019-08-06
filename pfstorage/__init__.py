@@ -1,1 +1,1 @@
-from .pfstorage   import PfStorage, StoreHandler, ThreadedHTTPServer
+from .pfstorage   import PfStorage, swiftStorage, StoreHandler, ThreadedHTTPServer
