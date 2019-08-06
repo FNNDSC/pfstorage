@@ -12,19 +12,19 @@ version: '3'
 
 services:
   pfcon_dev:
-    image:   ${CREPO}/pfcon
+    image:   ${CREPO}/pfstorage
     volumes:
       # - /var/run/docker.sock:/var/run/docker.sock
-      - ./pfcon/pfcon.py:/usr/local/lib/python3.6/dist-packages/pfcon/pfcon.py
+      - ./pfstorage/pfstorage.py:/usr/local/lib/python3.6/dist-packages/pfstorage/pfstorage.py
       # - .:/usr/local/lib/python3.5/dist-packages/pfcon
     ports:
-      - "5005:5005"
+      - "4005:4005"
     depends_on:
       - swift_service
     labels:
-      name: "pfcon"
-      role: "PF controller, part of the CHRIS backend."
-    command: ["--forever", "--httpResponse", "--verbosity", "1", "--debugToDir", "/tmp"]
+      name: "pfstorage"
+      role: "PF storage, a module for interacting with openstorage backends."
+    command: ["--verbosity", "1", "--debugToDir", "/tmp"]
 
   swift_service:
     image:   fnndsc/docker-swift-onlyone
@@ -35,46 +35,6 @@ services:
     labels:
       name: "swift"
       role: "swift object storage service"
-
-  pfioh_service:
-    # The following is a bit complicated... Basically we need to map a physical dir
-    # in the HOST to the key store in pfioh. The keystore is specified by the
-    # --storeBase flag.
-    image:  ${CREPO}/pfioh${TAG}
-    command: ["--forever", "--httpResponse", "--createDirsAsNeeded", "--storeBase", "/hostFS/storeBase", "--verbosity", "1"]
-    volumes:
-      - ./FS/remote:/hostFS/storeBase
-      # - ../pfioh/pfioh/pfioh.py:/usr/lib/python3.5/site-packages/pfioh/pfioh.py
-    ports:
-      - "5055:5055"
-    labels:
-      name: "pfioh"
-      role: "pfioh service"
-
-  pman_service:
-    # pman also needs access to the pfioh storeBase folder (and hence the volume)
-    # mapping from the HOST file system space.
-    #
-    # There is however an extra twist. Since pman spins off containers of its
-    # own, it needs to mount this storeBase dir into the spawned container.
-    # However, it can't mount a dir inside itself to the spawned container,
-    # it has to mount an actual existing directory. This directory is
-    # passed in the STOREBASE env variable, and will override the base
-    # mapping of SHAREDIR inside pman to the swarm manager. Note that the
-    # full path to the spawned container should be ${STOREBASE} + keyStore!
-    environment:
-      - STOREBASE
-    image:  ${CREPO}/pman${TAG}
-    command: ["--rawmode", "1", "--http", "--port", "5010", "--listeners", "12", "--verbosity", "1"]
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./FS/remote:/hostFS/storeBase
-      # - ../pman/pman/pman.py:/usr/local/lib/python3.5/dist-packages/pman/pman.py
-    ports:
-      - "5010:5010"
-    labels:
-      name: "pman"
-      role: "pman service"
 
 volumes:
   swift_storage:
