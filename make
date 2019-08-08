@@ -10,7 +10,7 @@
 #
 # DESC
 # 
-#   'make' sets up a pfcon instance using docker-compose. It can also
+#   'make' sets up a pfstorage con instance using docker-compose. It can also
 #   optionally populate a swift container with sample data.
 #
 # ARGS
@@ -28,10 +28,8 @@ HERE=$(pwd)
 echo "Starting script in dir $HERE"
 
 declare -a A_CONTAINER=(
-    "pfcon${TAG}"
+    "pfstorage${TAG}"
     "docker-swift-onlyone"
-    "pman${TAG}"
-    "pfioh${TAG}"
 )
 
 CREPO=fnndsc
@@ -114,10 +112,7 @@ else
     if (( ! b_skipIntro )) ; then 
         title -d 1 "Will use containers with following version info:"
         for CONTAINER in ${A_CONTAINER[@]} ; do
-            if [[   $CONTAINER != "chris_dev_backend"   && \
-                    $CONTAINER != "pl-pacsretrieve"     && \
-                    $CONTAINER != "pl-pacsquery"        && \
-                    $CONTAINER != "docker-swift-onlyone"     && \
+            if [[   $CONTAINER != "docker-swift-onlyone"     && \
                     $CONTAINER != "swarm" ]] ; then
                 CMD="docker run ${CREPO}/$CONTAINER --version"
                 printf "${White}%40s\t\t" "${CREPO}/$CONTAINER"
@@ -126,14 +121,14 @@ else
             fi
         done
         # Determine the versions of pfurl *inside* pfcon/chris_dev_backend/pl-pacs*
-        CMD="docker run --entrypoint /usr/local/bin/pfurl ${CREPO}/pfcon${TAG} --version"
-        printf "${White}%40s\t\t" "pfurl inside ${CREPO}/pfcon${TAG}"
+        CMD="docker run --entrypoint /usr/local/bin/pfurl ${CREPO}/pfstorage${TAG} --version"
+        printf "${White}%40s\t\t" "pfurl inside ${CREPO}/pfstorage${TAG}"
         Ver=$(echo $CMD | sh | grep Version)
         echo -e "$Green$Ver"
         windowBottom
     fi
 
-    title -d 1 "Shutting down any running pfcon and pfcon related containers... "
+    title -d 1 "Shutting down any running pfstorage and pfstorage related containers... "
     docker-compose stop
     docker-compose rm -vf
     for CONTAINER in ${A_CONTAINER[@]} ; do
@@ -146,48 +141,48 @@ else
     done
     windowBottom
 
-    cd $HERE
-    title -d 1 "Changing permissions to 755 on" " $(pwd)"
-    echo "chmod -R 755 $(pwd)"
-    chmod -R 755 $(pwd)
-    windowBottom
+    # cd $HERE
+    # title -d 1 "Changing permissions to 755 on" " $(pwd)"
+    # echo "chmod -R 755 $(pwd)"
+    # chmod -R 755 $(pwd)
+    # windowBottom
 
-    title -d 1 "Creating tmp dirs for volume mounting into containers..."
-    echo "${STEP}.1: Remove tree root 'FS'.."
-    rm -fr ./FS 
-    echo "${STEP}.2: Create tree structure for remote services in host filesystem..."
-    mkdir -p FS/local
-    chmod 777 FS/local
-    mkdir -p FS/remote
-    chmod 777 FS/remote
-    mkdir -p FS/data 
-    chmod 777 FS/data
-    chmod 777 FS
-    b_FSOK=1
-    type -all tree >/dev/null 2>/dev/null
-    if (( ! $? )) ; then
-        tree FS
-        report=$(tree FS | tail -n 1)
-        if [[ "$report" != "3 directories, 0 files" ]] ; then 
-            b_FSOK=0
-        fi
-    else
-        report=$(find FS 2>/dev/null)
-        lines=$(echo "$report" | wc -l)
-        if (( lines != 4 )) ; then
-            b_FSOK=0
-        fi
-    fi
-    if (( ! b_FSOK )) ; then 
-        printf "\n${Red}There should only be 3 directories and no files in the FS tree!\n"
-        printf "${Yellow}Please manually clean/delete the entire FS tree and re-run.\n"
-        printf "${Yellow}\nThis script will now exit with code '1'.\n\n"
-        exit 1
-    fi
-    windowBottom
+    # title -d 1 "Creating tmp dirs for volume mounting into containers..."
+    # echo "${STEP}.1: Remove tree root 'FS'.."
+    # rm -fr ./FS 
+    # echo "${STEP}.2: Create tree structure for remote services in host filesystem..."
+    # mkdir -p FS/local
+    # chmod 777 FS/local
+    # mkdir -p FS/remote
+    # chmod 777 FS/remote
+    # mkdir -p FS/data 
+    # chmod 777 FS/data
+    # chmod 777 FS
+    # b_FSOK=1
+    # type -all tree >/dev/null 2>/dev/null
+    # if (( ! $? )) ; then
+    #     tree FS
+    #     report=$(tree FS | tail -n 1)
+    #     if [[ "$report" != "3 directories, 0 files" ]] ; then 
+    #         b_FSOK=0
+    #     fi
+    # else
+    #     report=$(find FS 2>/dev/null)
+    #     lines=$(echo "$report" | wc -l)
+    #     if (( lines != 4 )) ; then
+    #         b_FSOK=0
+    #     fi
+    # fi
+    # if (( ! b_FSOK )) ; then 
+    #     printf "\n${Red}There should only be 3 directories and no files in the FS tree!\n"
+    #     printf "${Yellow}Please manually clean/delete the entire FS tree and re-run.\n"
+    #     printf "${Yellow}\nThis script will now exit with code '1'.\n\n"
+    #     exit 1
+    # fi
+    # windowBottom
 
 
-    title -d 1 "Starting pfcon containerized development environment using " " ./docker-compose.yml"
+    title -d 1 "Starting pfstorage containerized development environment using " " ./docker-compose.yml"
     echo "docker-compose up -d"
     docker-compose up -d
     windowBottom
@@ -200,10 +195,10 @@ else
     windowBottom
 
     if (( !  b_norestartinteractive_chris_dev )) ; then
-        title -d 1 "Restarting pfcon development container in interactive mode..."
-        docker-compose stop pfcon_dev
-        docker-compose rm -f pfcon_dev
-        docker-compose run --service-ports pfcon_dev
+        title -d 1 "Restarting pfstorage development container in interactive mode..."
+        docker-compose stop pfstorage_dev
+        docker-compose rm -f pfstorage_dev
+        docker-compose run --service-ports pfstorage_dev
         echo ""
         windowBottom
     fi
