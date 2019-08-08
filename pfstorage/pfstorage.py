@@ -204,7 +204,7 @@ class PfStorage(metaclass = abc.ABCMeta):
         str_desc                = ''
         str_version             = ''
 
-        pudb.set_trace()
+        # pudb.set_trace()
 
         for k,v in kwargs.items():
             if k == 'test':     b_test          = True
@@ -271,7 +271,11 @@ class PfStorage(metaclass = abc.ABCMeta):
         if str_action == 'ls':
             d_ret   = self.ls(path=str_args)
 
-        self.dp.debug
+        self.dp.qprint(
+                    json.dumps(d_ret, indent = 4),
+                    comms = 'status',
+                    level = 3
+                )
 
         return d_ret
 
