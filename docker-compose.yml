@@ -11,7 +11,7 @@
 version: '3'
 
 services:
-  pfcon_dev:
+  pfstorage_dev:
     image:   ${CREPO}/pfstorage
     volumes:
       # - /var/run/docker.sock:/var/run/docker.sock
