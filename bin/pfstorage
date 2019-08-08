@@ -330,7 +330,7 @@ if args.b_version:
     sys.exit(1)
 
 if not args.server:
-    pudb.set_trace()
+    # pudb.set_trace()
     if args.str_type == 'swift':
         storage         = swiftStorage(
             args        = vars(args),
