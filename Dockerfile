@@ -7,19 +7,20 @@
 #
 # For example if building a local version, you could do:
 #
-#   docker build -t local/pfcon .
+#   docker build -t local/pfstorage .
 #
-# In the case of a proxy (located at 192.168.13.14:3128), do:
+# In the case of a proxy (located at say 10.41.13.4:3128), do:
 #
-#    docker build --build-arg http_proxy=http://192.168.13.14:3128 --build-arg UID=$UID -t local/pfcon .
+#    export PROXY="http://10.41.13.4:3128"
+#    docker build --build-arg http_proxy=${PROXY} --build-arg UID=$UID -t local/pfstorage .
 #
 # To run an interactive shell inside this container, do:
 #
-#   docker run -ti --rm --entrypoint /bin/bash local/pfcon
+#   docker run -ti --rm --entrypoint /bin/bash local/pfstorage
 #
 # To pass an env var HOST_IP to container, do:
 #
-#   docker run -ti --rm -e HOST_IP=$(ip route | grep -v docker | awk '{if(NF==11) print $9}') --entrypoint /bin/bash local/pfcon
+#   docker run -ti --rm -e HOST_IP=$(ip route | grep -v docker | awk '{if(NF==11) print $9}') --entrypoint /bin/bash local/pfstorage
 #
 
 FROM fnndsc/ubuntu-python3:latest
