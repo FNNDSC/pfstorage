@@ -45,6 +45,12 @@ str_desc    = Colors.CYAN + """
     'pfstorage' is a module class and stand-alone app that provides a simple 
     API (both programmatically and CLI-driven) to access some openstorage 
     backend (such as swift).
+
+    'pfstorag' operates in two modes:
+
+        * a server that processes pf* conformant CURL/JSON type communication;
+        * a non-server single-use script-like manner (but still uses the
+          same JSON syntax for directives as in server mode)
     
 """ + \
         Colors.BLINK_RED +  """
@@ -63,13 +69,30 @@ def synopsis(ab_shortOnly = False):
 
 	    pfstorage
 
-        - path-and-file storage
+        - path-and-file object-storage
 
     SYNOPSIS
 
+            _script mode_:
             pfstorage                                               \\
-                [--ip <storageServerIP>]                            \\
-                [--port <storageServerPort>]                        \\
+                [--ipSwift <swiftServerIP>]                         \\
+                [--portSwift <swiftServerPort>]                     \\
+                [--verbosity <level>]                               \\
+                [--configFileLoad <file>]                           \\
+                [--configFileSave <file>]                           \\
+                [--test]                                            \\
+                [--httpResponse]                                    \\
+                [-x|--desc]                                         \\
+                [-y|--synopsis]                                     \\
+                [--type <storageBackendType>]                       \\
+                --msg '<JSON_formatted_message>'
+            
+            _server mode_:
+            pfstorage                                               \\
+                [--ipSelf <storageServerIP>]                        \\
+                [--portSelf <storageServerPort>]                    \\
+                [--ipSwift <swiftServerIP>]                         \\
+                [--portSwift <swiftServerPort>]                     \\
                 [--verbosity <level>]                               \\
                 [--configFileLoad <file>]                           \\
                 [--configFileSave <file>]                           \\
@@ -81,22 +104,41 @@ def synopsis(ab_shortOnly = False):
                 [--debugToDir <dir>]                                \\
                 [--verbosity <level>]                               \\
                 [--type <storageBackendType>]                       \\
-                --action <action>                                   \\
-                --actionArgs <actionArgs>
+                --msg '<JSON_formatted_message>'
 
     BRIEF EXAMPLE
 
+            _script mode_:
             pfstorage                                               \\
-                --ip %s                                   \\
-                --port 5005                                         \\
+                --ipSwift %s                                   \\
+                --portSwift 5005                                    \\
                 --httpResponse                                      \\
                 --verbosity 1                                       \\
                 --debugToDir /tmp                                   \\
                 --type swift                                        \\
-                --action ls                                         \\
-                --actionArgs dirs
+                --msg ' 
+                {
+                    "action":   "ls",
+                    "meta": {
+                        "args":     "/"
+                    }
+                }
+                '
 
-    ''' % str_defIP
+            _server mode_:
+            pfstorage                                               \\
+                --ipSwift %s                                   \\
+                --portSwift 5005                                    \\
+                --ipSelf %s                                   \\
+                --portSelf 8080                                     \\
+                --httpResponse                                      \\
+                --verbosity 1                                       \\
+                --debugToDir /tmp                                   \\
+                --type swift                                        \\
+                --server                                            \\
+                --forever 
+
+    ''' % (str_defIP, str_defIP, str_defIP)
 
     description =  '''
     DESCRIPTION
@@ -110,25 +152,36 @@ def synopsis(ab_shortOnly = False):
 
     ARGS
 
-        --action <action>
+        --msg '<JSON_formatted>'
         The action to perform. This can be one of:
 
             * pull -- pull data from storage to file system
             * push -- push data from file system to storage
             * ls   -- listing of data within storage
 
-        --actionArgs <args>
-        The action-specific pattern of arguments.
+        with a JSON formatted string similar to:
+
+            {
+                "action":   "ls",
+                "meta": {
+                    "args": "/"
+                }
+            }
 
         [--type <storageBackendType>]
         The type of openstorage. Currently this is 'swift'.
 
-        [--ip <IP>]                            
-
+        [--ipSwift <swiftIP>]                            
         The IP interface of the openstorage service. Default %s.
 
-        [--port <port>]
-        The port of the openstorage service. Defaults to '5055'.
+        [--portSwift <swiftPort>]
+        The port of the openstorage service. Defaults to '8080'.
+
+        [--ipSelf <selfIP>]                            
+        The IP interface of the pfstorage service. Default %s.
+
+        [--portSelf <selfPort>]
+        The port of the pfstorage service. Defaults to '5045'.
 
         [--httpResponse]
         Send return strings as HTTP formatted replies with content-type html.
@@ -162,17 +215,37 @@ def synopsis(ab_shortOnly = False):
 
     EXAMPLES
 
-        pfstorage                                               \\
-            --ip %s                                   \\
-            --port 5005                                         \\
-            --httpResponse                                      \\
-            --verbosity 1                                       \\
-            --debugToDir /tmp                                   \\
-            --type swift                                        \\
-            --action ls                                         \\
-            --actionArgs dirs
+    _script mode_:
+    pfstorage                                               \\
+        --ipSwift %s                                   \\
+        --portSwift 5005                                    \\
+        --httpResponse                                      \\
+        --verbosity 1                                       \\
+        --debugToDir /tmp                                   \\
+        --type swift                                        \\
+        --msg ' 
+        {
+            "action":   "ls",
+            "meta": {
+                "args":     "/"
+            }
+        }
+        '
 
-    ''' % (str_defIP, str_defIP)
+    _server mode_:
+    pfstorage                                               \\
+        --ipSwift %s                                   \\
+        --portSwift 5005                                    \\
+        --ipSelf %s                                   \\
+        --portSelf 8080                                     \\
+        --httpResponse                                      \\
+        --verbosity 1                                       \\
+        --debugToDir /tmp                                   \\
+        --type swift                                        \\
+        --server                                            \\
+        --forever 
+
+    ''' % (str_defIP, str_defIP, str_defIP, str_defIP, str_defIP)
     if ab_shortOnly:
         return shortSynopsis
     else:
@@ -180,6 +253,13 @@ def synopsis(ab_shortOnly = False):
 
 parser  = ArgumentParser(description = str_desc, formatter_class = RawTextHelpFormatter)
 
+parser.add_argument(
+    '--msg',
+    action  = 'store',
+    dest    = 'msg',
+    default = '',
+    help    = 'Message to send to pman or similar listener.'
+)
 parser.add_argument(
     '--action',
     action  = 'store',
@@ -217,17 +297,17 @@ parser.add_argument(
     default = False
 )
 parser.add_argument(
-    '--ip',
+    '--ipSelf',
     action  = 'store',
-    dest    = 'ip',
+    dest    = 'ipSelf',
     default = str_defIP,
     help    = 'IP to connect.'
 )
 parser.add_argument(
-    '--port',
+    '--portSelf',
     action  = 'store',
-    dest    = 'port',
-    default = '5005',
+    dest    = 'portSelf',
+    default = '4055',
     help    = 'Port to use.'
 )
 parser.add_argument(
@@ -241,7 +321,7 @@ parser.add_argument(
     '--portSwift',
     action  = 'store',
     dest    = 'portSwift',
-    default = '5005',
+    default = '8080',
     help    = 'Port to use.'
 )
 parser.add_argument(
@@ -314,7 +394,7 @@ parser.add_argument(
 )
 
 args            = parser.parse_args()
-args.port       = int(args.port)
+args.portSelf   = int(args.portSelf)
 
 if args.desc or args.synopsis:
     print(str_desc)
@@ -333,6 +413,7 @@ if not args.server:
     # pudb.set_trace()
     if args.str_type == 'swift':
         storage         = swiftStorage(
+            msg         = args.msg,
             args        = vars(args),
             desc        = str_desc,
             version     = str_version
@@ -344,8 +425,8 @@ if not args.server:
             )
         )
 else:
-    pudb.set_trace()
-    server             = ThreadedHTTPServer((args.ip, args.port), StoreHandler)
+    # pudb.set_trace()
+    server             = ThreadedHTTPServer((args.ipSelf, args.portSelf), StoreHandler)
     server.setup(args = vars(args), desc = str_desc, ver = str_version)
     server.serve_forever()
 
