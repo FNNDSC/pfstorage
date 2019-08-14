@@ -417,22 +417,47 @@ class PfStorage(metaclass = abc.ABCMeta):
         d_ret['numDirs']    = len(d_ret['l_dirFS'])
         return d_ret
 
-    def run(self, str_action, str_args):
+    def run(self, str_msg):
         """
-        Execute the actual action.
+        Execute the actual action, essentially a light refactoring
+        of the POST actionParse method of the server.
+
+        Essentially, any "action" string passed by the client is mapped
+        to a method <action>_process() -- of course assuming that this
+        method exists.
         """
-        d_ret   = {}
 
-        if str_action == 'ls':
-            d_ret   = self.ls(path=str_args)
+        # Default result dictionary. Note that specific methods
+        # might return a different dictionary. It is NOT safe to
+        # assume that all action processing methods will honor this
+        # tempate.
+        d_actionResult      = {
+            'status':       False,
+            'msg':          ''
+        }
 
-        self.dp.qprint(
-                    json.dumps(d_ret, indent = 4),
-                    comms = 'status',
-                    level = 3
-                )
+        d_msg   = json.loads(str_msg)
 
-        return d_ret
+        if 'action' in d_msg:  
+            self.dp.qprint("verb: %s detected." % d_msg['action'], comms = 'status')
+            str_method      = '%s_process' % d_msg['action']
+            self.dp.qprint("method to call: %s(request = d_msg) " % str_method, comms = 'status')
+            try:
+                # pudb.set_trace()
+                method              = getattr(self, str_method)
+                d_actionResult      = method(request = d_msg)
+            except:
+                str_msg     = "Class '{}' does not implement method '{}'".format(
+                                        self.__class__.__name__, 
+                                        str_method)
+                d_actionResult      = {
+                    'status':   False,
+                    'msg':      str_msg
+                }
+                self.dp.qprint(str_msg, comms = 'error')
+            self.dp.qprint(json.dumps(d_actionResult, indent = 4), comms = 'tx')
+        
+        return d_actionResult
 
     @abc.abstractmethod
     def connect(self, *args, **kwargs):
@@ -440,6 +465,14 @@ class PfStorage(metaclass = abc.ABCMeta):
         The base connection class. 
         
         This handles the connection to the openstorage providing service.
+        """
+
+    @abc.abstractmethod
+    def ls_process(self, *args, **kwargs):
+        """
+        The base ls process method. 
+        
+        This handles the ls processing in the openstorage providing service.
         """
 
     @abc.abstractmethod
@@ -525,21 +558,67 @@ class swiftStorage(PfStorage):
 
         return d_ret
 
+    def ls_process(self, *args, **kwargs):
+        """
+        Process the 'ls' directive (in the appropriate subclass).
+
+        For the case of 'swift', the return dictionary contains a 
+        key, 'objectDict' containing a list of dictionaries which 
+        in turn have keys: 
+
+            'hash', 'last_modified', 'bytes', 'name', 'content-type'
+
+        """
+        d_ret       = {'status': False}
+        d_ls        = {}
+        d_lsFilter  = {}
+        d_msg       = {}
+        d_meta      = {}
+        l_retSpec   = ['name']  
+
+        for k, v in kwargs.items():
+            if k == 'request':      d_msg       = v
+
+        if 'meta' in d_msg:
+            d_meta  = d_msg['meta']
+            if 'retSpec' in d_meta:
+                l_retSpec   = d_meta['retSpec']
+            d_ls = self.ls(**d_meta)
+            d_ret['status'] = d_ls['status']
+            if len(l_retSpec):
+                d_lsFilter  = [ {x: y[x] for x in l_retSpec} for y in d_ls['objectDict'] ]
+                d_ret['ls'] = d_lsFilter
+            else:
+                d_ret['ls'] = d_ls
+
+        return d_ret
+
     def ls(self, *args, **kwargs):
         """
-        Return a list of objects in the swiftstorage
+        Return a list of objects in the swiftstorage -- 
+
+        The actual object list is returned in 'objectDict' and
+        a separate, simplfied list of only filenames is returned
+        in 'lsList'. Note that lsList is filtered from 'objectDict'.
+
+        'objectList' contains a list of dictionaries with keys:
+
+            'hash', 'last_modified', 'bytes', 'name'
+            
         """
 
         l_ls                    = []    # The listing of names to return
         ld_obj                  = {}    # List of dictionary objects in swift
         str_path                = '/'
         str_fullPath            = ''
+        str_subString           = ''
         b_prependBucketPath     = False
         b_status                = False
 
         for k,v in kwargs.items():
             if k == 'path':                 str_path            = v
             if k == 'prependBucketPath':    b_prependBucketPath = v
+            if k == 'substr':               str_subString       = v
 
         # Remove any leading noise on the str_path, specifically
         # any leading '.' characters.
@@ -558,11 +637,13 @@ class swiftStorage(PfStorage):
             ld_obj = conn.get_container( 
                         d_conn['container_name'], 
                         prefix          = str_fullPath,
-                        full_listing    = True)[1]        
+                        full_listing    = True)[1]
+                        
+            if len(str_subString):
+                ld_obj  = [x for x in ld_obj if str_subString in x['name']]
 
-            for d_obj in ld_obj:
-                l_ls.append(d_obj['name'])
-                b_status    = True
+            l_ls    = [x['name'] for x in ld_obj]
+            if len(l_ls):   b_status    = True
         
         return {
             'status':       b_status,
@@ -595,6 +676,34 @@ class swiftStorage(PfStorage):
             'status':   b_exists,
             'objPath':  str_obj
         }
+
+    def objPut_process(self, *args, **kwargs):
+        """
+        Process the 'objPut' directive.
+        """
+        d_ret       = {
+            'status':   False,
+            'msg':      "No 'meta' JSON directive found in request"
+        }
+        d_msg       = {}
+        d_meta      = {}
+        str_putSpec = ""
+
+        for k, v in kwargs.items():
+            if k == 'request':      d_msg       = v
+
+        if 'meta' in d_msg:
+            d_meta              = d_msg['meta']
+            if 'putSpec' in d_meta:
+                str_putSpec         = d_meta['putSpec']
+                d_fileList          = self.filesFind(root = str_putSpec)
+                if d_fileList['status']:
+                    d_meta['fileList']  = d_fileList['l_fileFS']
+                    d_ret               = self.objPut(**d_meta)
+                else:
+                    d_ret['msg']    = 'No valid file list generated'
+
+        return d_ret
 
     def objPut(self, *args, **kwargs):
         """
@@ -680,6 +789,26 @@ class swiftStorage(PfStorage):
                 d_ret['objectFileList'].append(str_storagefilename)
         return d_ret
 
+    def objPull_process(self, *args, **kwargs):
+        """
+        Process the 'objPull' directive.
+        """
+        d_ret       = {
+            'status':   False,
+            'msg':      "No 'meta' JSON directive found in request"
+        }
+        d_msg       = {}
+        d_meta      = {}
+
+        for k, v in kwargs.items():
+            if k == 'request':      d_msg       = v
+
+        if 'meta' in d_msg:
+            d_meta  = d_msg['meta']
+            d_ret   = self.objPull(**d_meta)
+
+        return d_ret
+
     def objPull(self, *args, **kwargs):
         """
         Pull an object (or set of objects) from swift storage and
@@ -731,10 +860,10 @@ class swiftStorage(PfStorage):
             if k == 'mapLocationOver':  str_mapLocationOver = v
 
         # Get dictionary of objects in storage
-        d_lsSwift       = self.ls(path = str_swiftLocation)
+        d_ls            = self.ls(*args, **kwargs)
 
         # List of objects in storage
-        l_objectfile    = d_lsSwift['lsList']
+        l_objectfile    = [x['name'] for x in d_ls['objectDict']]
 
         if len(str_mapLocationOver):
             # replace the local file path with object store path
@@ -745,7 +874,8 @@ class swiftStorage(PfStorage):
             l_localfile         = ['/' + '{0}'.format(i) for i in l_objectfile]
             str_mapLocationOver =  '/' + str_swiftLocation
 
-        d_ret['localpath']      = str_mapLocationOver
+        d_ret['localpath']          = str_mapLocationOver
+        d_ret['currentWorkingDir']  = os.getcwd()
 
         if d_conn['status']:
             for str_localfilename, str_storagefilename in zip(l_localfile, l_objectfile):
@@ -809,6 +939,20 @@ class StoreHandler(BaseHTTPRequestHandler):
         """
 
         return self.storage.s.internalctl_process(*args, **kwargs)
+
+    def ls_process(self, *args, **kwargs):
+        """
+        Process the 'ls' directive -- return an object listing.
+        """
+
+        return self.storage.ls_process(*args, **kwargs)
+
+    def objPull_process(self, *args, **kwargs):
+        """
+        Process the 'objPull' directive
+        """
+
+        return self.storage.objPull_process(*args, **kwargs)
 
     def hello_process(self, *args, **kwargs):
         """
