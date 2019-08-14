@@ -409,6 +409,19 @@ if args.b_version:
     print("Version: %s" % str_version)
     sys.exit(1)
 
+if args.b_test:
+    handler     = StoreHandler(test = True)
+    handler.do_POST(
+        d_msg = {
+            "action": "hello",
+            "meta": {
+                "askAbout":     "sysinfo",
+                "echoBack":     "Hi there!"
+                }
+            }
+    )
+    sys.exit(0)
+
 if not args.server:
     # pudb.set_trace()
     if args.str_type == 'swift':
@@ -420,30 +433,16 @@ if not args.server:
         )
         print(
             json.dumps(
-                storage.run(args.str_action, args.str_args),
+                storage.run(args.msg),
                 indent  = 4
             )
         )
 else:
-    # pudb.set_trace()
     server             = ThreadedHTTPServer((args.ipSelf, args.portSelf), StoreHandler)
     server.setup(args = vars(args), desc = str_desc, ver = str_version)
-    server.serve_forever()
+    if args.b_forever and not args.b_test:
+        server.serve_forever()
+    else:
+        server.handle_request()
 
-# if args.b_test:
-#     handler     = pfstorage.StoreHandler(test = True)
-#     handler.do_POST(
-#         d_msg = {
-#             "action": "hello",
-#             "meta": {
-#                 "askAbout":     "sysinfo",
-#                 "echoBack":     "Hi there!"
-#                 }
-#             }
-#     )
-#     sys.exit(0)
 
-# if args.b_forever and not args.b_test:
-#     server.serve_forever()
-# else:
-#     server.handle_request()
