@@ -112,7 +112,6 @@ def synopsis(ab_shortOnly = False):
             pfstorage                                               \\
                 --ipSwift %s                                   \\
                 --portSwift 5005                                    \\
-                --httpResponse                                      \\
                 --verbosity 1                                       \\
                 --debugToDir /tmp                                   \\
                 --type swift                                        \\
@@ -247,7 +246,6 @@ def synopsis(ab_shortOnly = False):
     pfstorage                                               \\
         --ipSwift %s                                   \\
         --portSwift 8080                                    \\
-        --httpResponse                                      \\
         --verbosity 1                                       \\
         --debugToDir /tmp                                   \\
         --type swift                                        \\
