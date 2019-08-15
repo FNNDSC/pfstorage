@@ -22,10 +22,9 @@ This repository provides ``pfstorage`` -- a library / module that speaks to an o
 pfstorage
 =========
 
-Most simply, ``pfstorage`` is a moule that offers a regularized interface to some other backend object storage. While currently supporting ``swift``, the long term idea is to support a multitude of backends. By providing its own interface to several storage backends, this module removes the need for client code to change when a different object storage backend is used.
+Most simply, ``pfstorage`` is a module that offers a regularized interface to some other backend object storage. While currently supporting ``swift``, the long term idea is to support a multitude of backends. By providing its own interface to several storage backends, this module removes the need for client code to change when a different object storage backend is used.
 
-While at its core a module/library, ``pfstorage`` also provides a command line script interface mode to the library, as well as an http server mode to the library, allowing an instantiated object to interact with object storage and controlled via some other external client using curl-type http calls.
-
+While at its core a module/library, ``pfstorage`` also provides a command line script interface mode to the library. In the command line mode, the main module functions are exposed to appropriate CLI. In the http server mode, a client can use curl-type http calls to call the underlying library functions.
 
 ************
 Installation
@@ -99,6 +98,22 @@ and then run (for example in http server mode access to the library):
            --forever \
            --httpResponse \
            --server
+
+or in CLI mode:
+
+.. code-block:: bash
+    docker run --name pfstorage -v /home:/Users --rm -ti \
+           fnndsc/pfstorage \
+           --ipSwift localhost \
+           --portSwift 8080 \
+           --msg '
+            { "action": "ls",
+              "meta": {
+                            "path":         "",       
+                            "retSpec":      ["name", "bytes"]
+                      }                                   
+            }'
+        
 
 *****
 Usage
@@ -196,6 +211,9 @@ Command line arguments
     EXAMPLES
 
     _script mode_:
+
+.. code-block:: bash
+
     pfstorage                                               \
         --ipSwift localhost                                 \
         --portSwift 8080                                    \
@@ -214,6 +232,9 @@ Command line arguments
         '
 
     _server mode_:
+
+.. code-block:: bash
+
     pfstorage                                               \
         --ipSwift localhost                                 \
         --portSwift 8080                                    \

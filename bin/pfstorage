@@ -117,11 +117,11 @@ def synopsis(ab_shortOnly = False):
                 --debugToDir /tmp                                   \\
                 --type swift                                        \\
                 --msg ' 
-                {
-                    "action":   "ls",
-                    "meta": {
-                        "args":     "/"
-                    }
+                { "action": "ls",
+                "meta": {
+                                "path":         "",       
+                                "retSpec":      ["name", "bytes"]
+                        }                                   
                 }
                 '
 
@@ -175,7 +175,7 @@ def synopsis(ab_shortOnly = False):
                             "retSpec":      ["name", "bytes"]
                       }                                   
             }
-            
+
             * objPut:
             {  "action": "objPut",
                 "meta": {
