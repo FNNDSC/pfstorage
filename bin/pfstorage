@@ -22,7 +22,7 @@ str_defIP   = [l for l in (
                     [[(s.connect(('8.8.8.8', 53)), s.getsockname()[0], s.close()) 
                 for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]]) if l][0][0]
 
-str_version = "1.0.0.4"
+str_version = "1.0.0.6"
 str_desc    = Colors.CYAN + """
 
          __       _                                    
@@ -42,15 +42,17 @@ str_desc    = Colors.CYAN + """
                               -- version """ + \
              Colors.YELLOW + str_version + Colors.CYAN + """ --
 
-    'pfstorage' is a module class and stand-alone app that provides a simple 
-    API (both programmatically and CLI-driven) to access some openstorage 
-    backend (such as swift).
+    Most simply, ``pfstorage`` is a module that offers a regularized interface
+    to some other backend object storage. While currently supporting ``swift``, 
+    the long term idea is to support a multitude of backends. By providing its 
+    own interface to several storage backends, this module removes the need for 
+    client code to change when a different object storage backend is used.
 
-    'pfstorag' operates in two modes:
-
-        * a server that processes pf* conformant CURL/JSON type communication;
-        * a non-server single-use script-like manner (but still uses the
-          same JSON syntax for directives as in server mode)
+    While at its core a module/library, ``pfstorage`` also provides two modes of 
+    stand-alone access: (1) a command line script interface mode to the library, 
+    and (2) a persistent http server mode. In the command line mode, the main 
+    module functions are exposed to appropriate CLI. In the http server mode, a 
+    client can use curl-type http calls to call the underlying library functions.
     
 """ + \
         Colors.BLINK_RED +  """

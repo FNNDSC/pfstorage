@@ -1,5 +1,5 @@
 ###################
-pfstorage  v1.0.0.4
+pfstorage  v1.0.0.6
 ###################
 
 .. image:: https://badge.fury.io/py/pfstorage.svg
@@ -24,7 +24,7 @@ pfstorage
 
 Most simply, ``pfstorage`` is a module that offers a regularized interface to some other backend object storage. While currently supporting ``swift``, the long term idea is to support a multitude of backends. By providing its own interface to several storage backends, this module removes the need for client code to change when a different object storage backend is used.
 
-While at its core a module/library, ``pfstorage`` also provides a command line script interface mode to the library. In the command line mode, the main module functions are exposed to appropriate CLI. In the http server mode, a client can use curl-type http calls to call the underlying library functions.
+While at its core a module/library, ``pfstorage`` also provides two modes of stand-alone access: (1) a command line script interface mode to the library, and (2) a persistent http server mode. In the command line mode, the main module functions are exposed to appropriate CLI. In the http server mode, a client can use curl-type http calls to call the underlying library functions.
 
 ************
 Installation
