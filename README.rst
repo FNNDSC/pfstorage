@@ -1,5 +1,5 @@
 ###################
-pfstorage  v1.0.0.2
+pfstorage  v1.0.0.4
 ###################
 
 .. image:: https://badge.fury.io/py/pfstorage.svg

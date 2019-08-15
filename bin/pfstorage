@@ -22,7 +22,7 @@ str_defIP   = [l for l in (
                     [[(s.connect(('8.8.8.8', 53)), s.getsockname()[0], s.close()) 
                 for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]]) if l][0][0]
 
-str_version = "1.0.0.2"
+str_version = "1.0.0.4"
 str_desc    = Colors.CYAN + """
 
          __       _                                    
@@ -111,7 +111,7 @@ def synopsis(ab_shortOnly = False):
             _script mode_:
             pfstorage                                               \\
                 --ipSwift %s                                   \\
-                --portSwift 5005                                    \\
+                --portSwift 8080                                    \\
                 --verbosity 1                                       \\
                 --debugToDir /tmp                                   \\
                 --type swift                                        \\
@@ -126,9 +126,9 @@ def synopsis(ab_shortOnly = False):
 
             _server mode_:
             pfstorage                                               \\
-                --ipSwift %s                                   \\
+                --ipSwift %s                                \\
                 --portSwift 8080                                    \\
-                --ipSelf %s                                   \\
+                --ipSelf %s                                \\
                 --portSelf 4055                                     \\
                 --httpResponse                                      \\
                 --verbosity 1                                       \\
@@ -244,7 +244,7 @@ def synopsis(ab_shortOnly = False):
 
     _script mode_:
     pfstorage                                               \\
-        --ipSwift %s                                   \\
+        --ipSwift %s                              \\
         --portSwift 8080                                    \\
         --verbosity 1                                       \\
         --debugToDir /tmp                                   \\
@@ -261,9 +261,9 @@ def synopsis(ab_shortOnly = False):
 
     _server mode_:
     pfstorage                                               \\
-        --ipSwift %s                                   \\
+        --ipSwift %s                              \\
         --portSwift 8080                                    \\
-        --ipSelf %s                                   \\
+        --ipSelf %s                               \\
         --portSelf 4055                                     \\
         --httpResponse                                      \\
         --verbosity 1                                       \\
