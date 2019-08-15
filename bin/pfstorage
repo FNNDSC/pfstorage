@@ -128,9 +128,9 @@ def synopsis(ab_shortOnly = False):
             _server mode_:
             pfstorage                                               \\
                 --ipSwift %s                                   \\
-                --portSwift 5005                                    \\
+                --portSwift 8080                                    \\
                 --ipSelf %s                                   \\
-                --portSelf 8080                                     \\
+                --portSelf 4055                                     \\
                 --httpResponse                                      \\
                 --verbosity 1                                       \\
                 --debugToDir /tmp                                   \\
@@ -144,47 +144,75 @@ def synopsis(ab_shortOnly = False):
     DESCRIPTION
 
         ``pfstorage`` is a module/script that provides unifed access
-        to some openstorage backend (typically swift) and it is part 
+        to some object storage backend (typically swift) and it is part 
         of the ``pf`` suite of applications.
 
-        Typically ``pfstorage`` is controlled by the pattern of actions
-        and actionArgs passed in the CLI.
+        ``pfstorage`` provides:
+
+            * A library/module for internal API access to some
+              object storage backend;
+
+            * A stand alone command line mode using this module;
+
+            * An http server mode, in which it offers an http REST-like API
+              for using the library/module.
 
     ARGS
 
         --msg '<JSON_formatted>'
         The action to perform. This can be one of:
 
-            * pull -- pull data from storage to file system
-            * push -- push data from file system to storage
-            * ls   -- listing of data within storage
+            * objPull -- pull data from storage to file system
+            * objPush -- push data from file system to storage
+            * ls      -- listing of data within storage
 
         with a JSON formatted string similar to:
 
-            {
-                "action":   "ls",
-                "meta": {
-                    "args": "/"
-                }
+            * ls:
+            { "action": "ls",
+              "meta": {
+                            "path":         "",       
+                            "retSpec":      ["name", "bytes"]
+                      }                                   
             }
+            
+            * objPut:
+            {  "action": "objPut",
+                "meta": {
+                            "putSpec":              "./data",
+                            "inLocation":           "storage",
+                            "mapLocationOver":      "./data"
+                        }
+            } 
+
+            * objPull:
+            {  "action": "objPull",
+                "meta": {
+                            "path":                 "chris",
+                            "substr":               "/018",
+                            "fromLocation":         "chris/uploads/DICOM",
+                            "mapLocationOver":      "./data"
+                        }
+            }                     
 
         [--type <storageBackendType>]
         The type of openstorage. Currently this is 'swift'.
 
         [--ipSwift <swiftIP>]                            
-        The IP interface of the openstorage service. Default %s.
+        The IP interface of the object storage service. Default %s.
 
         [--portSwift <swiftPort>]
-        The port of the openstorage service. Defaults to '8080'.
+        The port of the object storage service. Defaults to '8080'.
 
         [--ipSelf <selfIP>]                            
-        The IP interface of the pfstorage service. Default %s.
+        The IP interface of the pfstorage service for server mode. Default %s.
 
         [--portSelf <selfPort>]
-        The port of the pfstorage service. Defaults to '5045'.
+        The port of the pfstorage service for server mode. Defaults to '4055'.
 
         [--httpResponse]
-        Send return strings as HTTP formatted replies with content-type html.
+        In servier mode, send return strings as HTTP formatted replies 
+        with content-type html.
 
         [--configFileLoad <file>]
         Load configuration information from the JSON formatted <file>.
@@ -218,7 +246,7 @@ def synopsis(ab_shortOnly = False):
     _script mode_:
     pfstorage                                               \\
         --ipSwift %s                                   \\
-        --portSwift 5005                                    \\
+        --portSwift 8080                                    \\
         --httpResponse                                      \\
         --verbosity 1                                       \\
         --debugToDir /tmp                                   \\
@@ -227,7 +255,8 @@ def synopsis(ab_shortOnly = False):
         {
             "action":   "ls",
             "meta": {
-                "args":     "/"
+                "path":         "",       
+                "retSpec":      ["name", "bytes"]
             }
         }
         '
@@ -235,9 +264,9 @@ def synopsis(ab_shortOnly = False):
     _server mode_:
     pfstorage                                               \\
         --ipSwift %s                                   \\
-        --portSwift 5005                                    \\
+        --portSwift 8080                                    \\
         --ipSelf %s                                   \\
-        --portSelf 8080                                     \\
+        --portSelf 4055                                     \\
         --httpResponse                                      \\
         --verbosity 1                                       \\
         --debugToDir /tmp                                   \\
