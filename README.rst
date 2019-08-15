@@ -217,7 +217,6 @@ Command line arguments
     pfstorage                                               \
         --ipSwift localhost                                 \
         --portSwift 8080                                    \
-        --httpResponse                                      \
         --verbosity 1                                       \
         --debugToDir /tmp                                   \
         --type swift                                        \
@@ -240,6 +239,7 @@ Command line arguments
         --portSwift 8080                                    \
         --ipSelf localhost                                  \
         --portSelf 4055                                     \
+        --httpResponse                                      \
         --verbosity 1                                       \
         --debugToDir /tmp                                   \
         --type swift                                        \
