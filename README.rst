@@ -17,7 +17,7 @@ pfstorage  v1.0.0.0
 Overview
 ********
 
-This repository provides ``pfstorage`` -- a controlling service that speaks to an object storage backend (such as *swift*) and also provides logic for handling input/output data locations for the ChRIS system.
+This repository provides ``pfstorage`` -- a library / module that speaks to an object storage backend (such as *swift*) and also provides logic for handling input/output data locations for the ChRIS system.
 
 pfstorage
 =========
