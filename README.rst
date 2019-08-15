@@ -57,6 +57,7 @@ You might want to add to your .bashrc file these two lines:
 Note that depending on distro, the virtualenvwrapper.sh path might be
 
 .. code-block:: bash
+
     /usr/share/virtualenvwrapper/virtualenvwrapper.sh
 
 Subsequently, you can source your ``.bashrc`` and create a new Python3 virtual environment:
@@ -102,6 +103,7 @@ and then run (for example in http server mode access to the library):
 or in CLI mode:
 
 .. code-block:: bash
+
     docker run --name pfstorage -v /home:/Users --rm -ti \
            fnndsc/pfstorage \
            --ipSwift localhost \
