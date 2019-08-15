@@ -210,7 +210,7 @@ Command line arguments
 
     EXAMPLES
 
-    _script mode_:
+_script mode_:
 
 .. code-block:: bash
 
@@ -231,7 +231,7 @@ Command line arguments
         }
         '
 
-    _server mode_:
+_server mode_:
 
 .. code-block:: bash
 
@@ -240,7 +240,6 @@ Command line arguments
         --portSwift 8080                                    \
         --ipSelf localhost                                  \
         --portSelf 4055                                     \
-        --httpResponse                                      \
         --verbosity 1                                       \
         --debugToDir /tmp                                   \
         --type swift                                        \
