@@ -210,7 +210,7 @@ Command line arguments
 
     EXAMPLES
 
-_script mode_:
+*script mode*
 
 .. code-block:: bash
 
@@ -231,7 +231,7 @@ _script mode_:
         }
         '
 
-_server mode_:
+*server mode*:
 
 .. code-block:: bash
 
