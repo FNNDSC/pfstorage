@@ -1,5 +1,5 @@
 ###################
-pfstorage  v1.0.0.0
+pfstorage  v1.0.0.2
 ###################
 
 .. image:: https://badge.fury.io/py/pfstorage.svg
@@ -165,7 +165,7 @@ Command line arguments
             }                     
 
         [--type <storageBackendType>]
-        The type of openstorage. Currently this is 'swift'.
+        The type of object storage. Currently this is 'swift'.
 
         [--ipSwift <swiftIP>]                            
         The IP interface of the object storage service. Default %s.
