@@ -23,7 +23,7 @@ str_defIP   = [l for l in (
                 for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]]) if l][0][0]
 
 str_name    = "pfstorage"
-str_version = "1.1.0.0"
+str_version = "1.1.0.2"
 str_desc    = Colors.CYAN + """
 
          __       _                                    
@@ -458,6 +458,7 @@ if not args.server:
         storage         = swiftStorage(
             msg         = args.msg,
             args        = vars(args),
+            name        = str_name,
             desc        = str_desc,
             version     = str_version
         )
