@@ -77,7 +77,7 @@ title -d 1 "Setting global exports..."
         STOREBASE=$(pwd)
         cd $HERE
     fi
-    echo -e "${STEP}.1 For pman override to swarm containers, exporting\n\tSTOREBASE=$STOREBASE... "
+    echo -e "${STEP}.1 For env override to swarm containers, exporting\n\tSTOREBASE=$STOREBASE... "
     export STOREBASE=$STOREBASE
     if (( b_debug )) ; then
         echo -e "${STEP}.2 Setting debug quiet to OFF. Note this is noisy!"
@@ -140,47 +140,6 @@ else
         printf "${Green}%20s${NC}\n" "done"
     done
     windowBottom
-
-    # cd $HERE
-    # title -d 1 "Changing permissions to 755 on" " $(pwd)"
-    # echo "chmod -R 755 $(pwd)"
-    # chmod -R 755 $(pwd)
-    # windowBottom
-
-    # title -d 1 "Creating tmp dirs for volume mounting into containers..."
-    # echo "${STEP}.1: Remove tree root 'FS'.."
-    # rm -fr ./FS 
-    # echo "${STEP}.2: Create tree structure for remote services in host filesystem..."
-    # mkdir -p FS/local
-    # chmod 777 FS/local
-    # mkdir -p FS/remote
-    # chmod 777 FS/remote
-    # mkdir -p FS/data 
-    # chmod 777 FS/data
-    # chmod 777 FS
-    # b_FSOK=1
-    # type -all tree >/dev/null 2>/dev/null
-    # if (( ! $? )) ; then
-    #     tree FS
-    #     report=$(tree FS | tail -n 1)
-    #     if [[ "$report" != "3 directories, 0 files" ]] ; then 
-    #         b_FSOK=0
-    #     fi
-    # else
-    #     report=$(find FS 2>/dev/null)
-    #     lines=$(echo "$report" | wc -l)
-    #     if (( lines != 4 )) ; then
-    #         b_FSOK=0
-    #     fi
-    # fi
-    # if (( ! b_FSOK )) ; then 
-    #     printf "\n${Red}There should only be 3 directories and no files in the FS tree!\n"
-    #     printf "${Yellow}Please manually clean/delete the entire FS tree and re-run.\n"
-    #     printf "${Yellow}\nThis script will now exit with code '1'.\n\n"
-    #     exit 1
-    # fi
-    # windowBottom
-
 
     title -d 1 "Starting pfstorage containerized development environment using " " ./docker-compose.yml"
     echo "docker-compose up -d"
