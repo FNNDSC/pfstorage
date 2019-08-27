@@ -15,14 +15,14 @@ def readme():
 
 setup(
       name             =   'pfstorage',
-      version          =   '1.0.0.6',
-      description      =   'openstorage interface',
+      version          =   '1.1.0.0',
+      description      =   'object storage interface',
       long_description =   readme(),
       author           =   'Rudolph Pienaar',
       author_email     =   'rudolph.pienaar@gmail.com',
       url              =   'https://github.com/FNNDSC/pfstorage',
       packages         =   ['pfstorage'],
-      install_requires =   ['pycurl', 'pyzmq', 'webob', 'pudb', 'psutil', 'pfurl', 'pfmisc', 'python-swiftclient'],
+      install_requires =   ['pfstate', 'pycurl', 'pyzmq', 'webob', 'pudb', 'psutil', 'pfurl', 'pfmisc', 'python-swiftclient'],
       test_suite       =   'nose.collector',
       tests_require    =   ['nose'],
       scripts          =   ['bin/pfstorage'],
