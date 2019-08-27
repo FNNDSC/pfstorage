@@ -1,5 +1,5 @@
 ###################
-pfstorage  v1.1.0.0
+pfstorage  v1.1.0.2
 ###################
 
 .. image:: https://badge.fury.io/py/pfstorage.svg
@@ -210,9 +210,13 @@ Command line arguments
         more fine tuned output control as opposed to '--quiet' that effectively
         silences everything.
 
-    EXAMPLES
 
-*script mode*
+********
+EXAMPLES
+********
+
+script mode
+-----------
 
 .. code-block:: bash
 
@@ -232,7 +236,10 @@ Command line arguments
         }
         '
 
-*server mode*:
+server mode
+-----------
+
+*start server*:
 
 .. code-block:: bash
 
@@ -247,3 +254,21 @@ Command line arguments
         --type swift                                        \
         --server                                            \
         --forever 
+
+*query server*:
+
+.. code-block:: bash
+
+    pfurl --verb POST --raw                                 \
+          --http localhost:4055/api/v1/cmd                  \
+          --httpResponseBodyParse                           \
+          --jsonwrapper 'payload'                           \
+          --msg '
+                {
+                    "action":   "ls",
+                    "meta": {
+                        "path":         "",
+                        "retSpec":      ["name", "bytes"]
+                    }
+                }
+        '
