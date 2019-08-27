@@ -18,7 +18,7 @@ services:
       - ./pfstorage/pfstorage.py:/usr/local/lib/python3.6/dist-packages/pfstorage/pfstorage.py
       # - .:/usr/local/lib/python3.5/dist-packages/pfcon
     ports:
-      - "4005:4005"
+      - "4055:4055"
     depends_on:
       - swift_service
     labels:
