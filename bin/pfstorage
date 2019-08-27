@@ -22,7 +22,8 @@ str_defIP   = [l for l in (
                     [[(s.connect(('8.8.8.8', 53)), s.getsockname()[0], s.close()) 
                 for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]]) if l][0][0]
 
-str_version = "1.0.0.6"
+str_name    = "pfstorage"
+str_version = "1.1.0.0"
 str_desc    = Colors.CYAN + """
 
          __       _                                    
@@ -467,8 +468,13 @@ if not args.server:
             )
         )
 else:
-    server             = ThreadedHTTPServer((args.ipSelf, args.portSelf), StoreHandler)
-    server.setup(args = vars(args), desc = str_desc, ver = str_version)
+    server              = ThreadedHTTPServer((args.ipSelf, args.portSelf), StoreHandler)
+    server.setup(  
+                args    = vars(args), 
+                name    = str_name, 
+                desc    = str_desc, 
+                ver     = str_version
+    )
     if args.b_forever and not args.b_test:
         server.serve_forever()
     else:
