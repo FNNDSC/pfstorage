@@ -216,7 +216,7 @@ EXAMPLES
 ********
 
 script mode
------------
+===========
 
 .. code-block:: bash
 
@@ -237,7 +237,7 @@ script mode
         '
 
 server mode
------------
+===========
 
 *start server*:
 
