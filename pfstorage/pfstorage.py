@@ -202,6 +202,13 @@ class PfStorage(metaclass = abc.ABCMeta):
         
         return d_actionResult
 
+    @staticmethod
+    def getStoragePath(key_num, storeBase):
+        """
+        Returns path of storage location in the filesystem space in which a specific service has been launched
+        """
+        return os.path.join('%s/key-%s' %(storeBase, key_num), '')
+
     @abc.abstractmethod
     def connect(self, *args, **kwargs):
         """
