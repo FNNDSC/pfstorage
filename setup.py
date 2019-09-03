@@ -15,7 +15,7 @@ def readme():
 
 setup(
       name             =   'pfstorage',
-      version          =   '1.1.0.2',
+      version          =   '1.1.1.2',
       description      =   'object storage interface',
       long_description =   readme(),
       author           =   'Rudolph Pienaar',
