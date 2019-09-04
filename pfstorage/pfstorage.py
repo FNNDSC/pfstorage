@@ -116,17 +116,17 @@ class PfStorage(metaclass = abc.ABCMeta):
         # pudb.set_trace()
 
         for k,v in kwargs.items():
-            if k == 'test':     b_test          = True
-            if k == 'args':     d_args          = v
-            if k == 'desc':     str_desc        = v
-            if k == 'version':  str_version     = v
+            if k == 'test':         b_test          = True
+            if k == 'args':         d_args          = v
+            if k == 'desc':         str_desc        = v
+            if k == 'version':      str_version     = v
 
-        self.s                  = D(*args, **kwargs)
-        self.dp                 = pfmisc.debug(    
-                                            verbosity   = S.T.cat('/this/verbosity'),
-                                            within      = S.T.cat('/this/name')
-                                            )
-        self.pp                 = pprint.PrettyPrinter(indent=4)
+        self.s              = D(*args, **kwargs)
+        self.dp             = pfmisc.debug(    
+                                        verbosity   = S.T.cat('/this/verbosity'),
+                                        within      = S.T.cat('/this/name')
+                                        )
+        self.pp             = pprint.PrettyPrinter(indent=4)
 
     def filesFind(self, *args, **kwargs):
         """
@@ -662,18 +662,21 @@ class StoreHandler(BaseHTTPRequestHandler):
             if k == 'desc':     Gstr_description    = v
             if k == 'version':  Gstr_version        = v
 
+        kwargs['args']          = Gd_args
+        kwargs['name']          = Gstr_name
+        kwargs['desc']          = Gstr_description
+        kwargs['version']       = Gstr_version
+
         self.storage            = swiftStorage(
-                    args        = Gd_args,
-                    name        = Gstr_name,
-                    desc        = Gstr_description,
-                    version     = Gstr_version
-        )
+                                        *args,
+                                        **kwargs
+                                    )
 
         self.dp         = pfmisc.debug(    
                                     verbosity   = int(Gd_args['verbosity']),
                                     within      = S.T.cat('/this/name')
                                     )
-        BaseHTTPRequestHandler.__init__(self, *args, **kwargs)
+        BaseHTTPRequestHandler.__init__(self, *args)
 
     def do_GET(self):
         d_server            = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(self.path).query))
