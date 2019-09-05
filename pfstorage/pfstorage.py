@@ -1100,6 +1100,7 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 
         self.verbosity      = int(Gd_args['verbosity'])
         self.dp             = debug(verbosity = self.verbosity)
+        self.args           = Gd_args
 
         self.col2_print("This host IP:",            str_defIPswift)
         self.col2_print("Self service address:",    Gd_args['ipSelf'])
