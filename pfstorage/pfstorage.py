@@ -27,6 +27,7 @@ import  multiprocessing
 import  pfurl
 import  configparser
 import  swiftclient
+import  traceback
 
 import  pfmisc
 
@@ -947,13 +948,15 @@ class StoreHandler(BaseHTTPRequestHandler):
             # pudb.set_trace()
             method              = getattr(self, str_method)
             d_actionResult      = method(request = d_msg)
-        except:
-            str_msg     = "Class '{}' does not implement method '{}'".format(
-                                    self.__class__.__name__, 
-                                    str_method)
+        except Exception as e:
+            # pudb.set_trace()            
+            str_msg     = "Error in Class '{}' calling method '{}'".format(
+                            self.__class__.__name__,
+                            str_method) + " on:\n" + str(sys.exc_info()) + "\n" + \
+                            traceback.format_exc()
             d_actionResult      = {
                 'status':   False,
-                'msg':      str_msg
+                'msg':      str_msg 
             }
             self.dp.qprint(str_msg, comms = 'error')
         self.dp.qprint(json.dumps(d_actionResult, indent = 4), comms = 'tx')
